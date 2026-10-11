@@ -193,9 +193,16 @@ and feed them in:
 ```sh
 # pahebatcher (its Solver forwards cookies to FlareSolverr):
 pahebatcher config set cookie_string 'cf_clearance=XXX; other=YYY'
+pahebatcher config show   # confirm the value is actually loaded
 # or per FlareSolverr request:
 {"cmd": "request.get", "url": "...", "cookies": [{"name": "cf_clearance", "value": "XXX"}]}
 ```
+
+Two hard rules learned on-device: harvest from the **exact host** the
+client queries (`cf_clearance` is host-bound — `.pw` cookies do nothing
+for `.com` API calls), and use a **fresh** export (minutes, not hours).
+Verify with `config show`; an empty value there means the transplant
+never reached the solver.
 
 What would reopen this: a visible checkbox during the loop (then wire
 `tabs_till_verify` through the client), or a solve on a different
