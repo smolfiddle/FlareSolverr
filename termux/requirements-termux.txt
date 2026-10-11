@@ -1,0 +1,18 @@
+# smolfiddle fork: Termux requirements.
+#
+# Identical to ../requirements.txt EXCEPT xvfbwrapper is dropped:
+# the Xvfb binary does not exist in Termux (Termux:X11 is the X server),
+# so installing the wrapper only wastes space and confuses users.
+# Headless mode uses Chromium's native --headless=new instead.
+bottle==0.13.4
+waitress==3.0.2
+selenium==4.47.0
+func-timeout==4.3.5
+prometheus-client==0.26.0
+# Required by undetected_chromedriver
+requests==2.34.2
+certifi==2026.7.22
+websockets==17.0.1
+packaging==26.3
+# Only required for Windows
+pefile==2024.8.26; platform_system == "Windows"
