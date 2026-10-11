@@ -58,9 +58,11 @@ curl -L -X POST 'http://localhost:8191/v1' \
    Open the Termux:X11 app to see the desktop. If `termux-x11` says
    "server already running", a server from an earlier start is still
    serving `:0`, which is fine, just use it.
-3. Start FlareSolverr headed:
+3. Start FlareSolverr headed (`TERMUX_SINGLE_PROCESS=1` is recommended:
+   it keeps Chromium to one process, which avoids Android's phantom
+   process killer terminating the session; verified on-device):
    ```sh
-   DISPLAY=:0 HEADLESS=false python src/flaresolverr.py
+   TERMUX_SINGLE_PROCESS=1 DISPLAY=:0 HEADLESS=false python src/flaresolverr.py
    ```
    The fork logs `using Termux:X11 display :0 (LXQt)`. If you see
    `HEADLESS=false but no $DISPLAY`, the X server isn't running.
