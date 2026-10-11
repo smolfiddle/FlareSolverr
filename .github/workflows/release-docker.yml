@@ -14,7 +14,8 @@ concurrency:
 
 jobs:
   build-docker-images:
-    if: ${{ !github.event.pull_request.head.repo.fork }}
+    # smolfiddle fork: Docker Hub publish only runs upstream (no secrets on fork)
+    if: ${{ github.repository == 'FlareSolverr/FlareSolverr' && !github.event.pull_request.head.repo.fork }}
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout repository

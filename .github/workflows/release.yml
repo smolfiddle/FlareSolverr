@@ -8,6 +8,8 @@ on:
 jobs:
   create-release:
     name: Create release
+    # smolfiddle fork: binary releases need GH_PAT, only present upstream
+    if: ${{ github.repository == 'FlareSolverr/FlareSolverr' }}
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout repository
