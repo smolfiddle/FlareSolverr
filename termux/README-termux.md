@@ -93,6 +93,25 @@ mode needs only step 4.
    `Missing X server or $DISPLAY`). Kill stale browsers with
    `pkill -9 -f chrome; pkill -9 -f chromedriver` before retrying.
 
+## If the Termux session dies with signal 9
+
+`[Process completed (signal 9)]` means Android killed the session, not a
+FlareSolverr bug. LXQt plus Chromium plus FlareSolverr is heavy for a
+phone. Mitigations, in order:
+
+   ```sh
+   # 1. Both apps need Unrestricted battery (Settings -> Apps ->
+   #    Termux and Termux:X11 -> Battery -> Unrestricted).
+   # 2. Fewer processes: collapse Chromium into one process
+   TERMUX_SINGLE_PROCESS=1 DISPLAY=:0 HEADLESS=false python src/flaresolverr.py
+   # 3. Close heavy apps (browser, camera, games) before a headed run.
+   # 4. Fall back to headless, which uses far less RAM:
+   HEADLESS=true python src/flaresolverr.py
+   ```
+
+   Check free memory with `free -h`. Devices with 4 GB or less should
+   prefer headless mode.
+
 ## Environment reference
 
 | Variable | Default | Effect |
