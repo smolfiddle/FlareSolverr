@@ -222,6 +222,14 @@ def get_webdriver(proxy: dict = None) -> WebDriver:
     # detect chrome path
     browser_executable_path = get_chrome_exe_path()
 
+    # smolfiddle fork: optional UA override (mobile tier for strict sites).
+    # Added after the default UA handling so an explicit override wins.
+    if termux_support is not None:
+        forced_ua = termux_support.get_forced_user_agent(version_main)
+        if forced_ua:
+            logging.info("Termux: forcing User-Agent: %s", forced_ua)
+            options.add_argument('--user-agent=%s' % forced_ua)
+
     # downloads and patches the chromedriver
     # if we don't set driver_executable_path it downloads, patches, and deletes the driver each time
     try:

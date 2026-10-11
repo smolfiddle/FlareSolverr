@@ -176,6 +176,9 @@ restarting anything. Mitigations, in order:
 | `TERMUX_DISABLE_GPU` | `true` on Termux | Adds `--disable-gpu` (Android has no `/dev/dri`). Set `false` to opt out. |
 | `TERMUX_SINGLE_PROCESS` | `false` | Opt-in `--single-process`. Helps on devices with Android's 32-process limit. |
 | `TERMUX_JITLESS` | `false` | Opt-in `--js-flags=--jitless`. Needed on unrooted Android 10+ where SELinux W^X blocks V8 JIT (`SIGSEGV`/exit 139). Slower JS, but stable. |
+| `TERMUX_MOBILE_UA` | `false` | Opt-in Pixel-style Android UA (uses detected Chromium major). Strict sites may serve mobile UAs an easier challenge tier than desktop-Linux UAs from carrier IPs. |
+| `TERMUX_USER_AGENT` | unset | Full custom UA string. Wins over `TERMUX_MOBILE_UA`. |
+| `TERMUX_STEALTH` | `true` on Termux | CDP cleanup of webdriver/cdc traces. Set `false` to A/B test with hardening off. |
 | `PORT` / `HOST` / `LOG_LEVEL` | `8191` / `0.0.0.0` / `info` | Same as upstream. |
 
 ## Notes

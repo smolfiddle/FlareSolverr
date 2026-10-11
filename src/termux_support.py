@@ -116,6 +116,32 @@ def stealth_enabled() -> bool:
     return _env_true("TERMUX_STEALTH", True)
 
 
+def get_forced_user_agent(chrome_major=None):
+    """User-Agent override, or None for the browser default.
+
+    Strict sites may tier desktop-Linux UAs from mobile-carrier IPs into
+    hard challenges while serving mobile UAs an easy tier (the phone's
+    Firefox passes where desktop-UA Chromium stalls). Two knobs:
+      TERMUX_USER_AGENT=<full string> — explicit override, wins.
+      TERMUX_MOBILE_UA=true — Pixel-style Android template using the
+        detected Chromium major (TERMUX_ANDROID_VER, default 14).
+    Always None off-Termux.
+    """
+    if not is_termux():
+        return None
+    explicit = os.environ.get("TERMUX_USER_AGENT", "").strip()
+    if explicit:
+        return explicit
+    if _env_true("TERMUX_MOBILE_UA", False):
+        major = chrome_major or "154"
+        android_ver = os.environ.get("TERMUX_ANDROID_VER", "14")
+        return (
+            "Mozilla/5.0 (Linux; Android %s; Pixel 8) AppleWebKit/537.36"
+            " (KHTML, like Gecko) Chrome/%s.0.0.0 Mobile Safari/537.36"
+        ) % (android_ver, major)
+    return None
+
+
 def log_display_mode(headless: bool):
     """One-line log so Termux:X11 vs headless vs Xvfb is always obvious."""
     if not is_termux():

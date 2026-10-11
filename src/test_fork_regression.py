@@ -95,6 +95,34 @@ class TestStealthHardening(unittest.TestCase):
                 termux_support.os.environ, {"TERMUX_STEALTH": "false"}, clear=True):
             self.assertFalse(termux_support.stealth_enabled())
 
+    def test_forced_ua_off_outside_termux(self):
+        with mock.patch.object(termux_support.os.path, "exists", return_value=False), \
+             mock.patch.dict(termux_support.os.environ,
+                             {"TERMUX_MOBILE_UA": "true"}, clear=True):
+            self.assertIsNone(termux_support.get_forced_user_agent("154"))
+
+    def test_forced_ua_mobile_template(self):
+        exists_mock = mock.patch.object(
+            termux_support.os.path, "exists",
+            side_effect=lambda p: p == "/data/data/com.termux")
+        with exists_mock, mock.patch.dict(
+                termux_support.os.environ, {"TERMUX_MOBILE_UA": "true"}, clear=True):
+            ua = termux_support.get_forced_user_agent("154")
+            self.assertIn("Android", ua)
+            self.assertIn("Mobile", ua)
+            self.assertIn("Chrome/154.", ua)
+            self.assertNotIn("X11", ua)
+
+    def test_forced_ua_explicit_wins(self):
+        exists_mock = mock.patch.object(
+            termux_support.os.path, "exists",
+            side_effect=lambda p: p == "/data/data/com.termux")
+        env = {"TERMUX_MOBILE_UA": "true", "TERMUX_USER_AGENT": "Custom/1.0"}
+        with exists_mock, mock.patch.dict(
+                termux_support.os.environ, env, clear=True):
+            self.assertEqual(termux_support.get_forced_user_agent("154"),
+                             "Custom/1.0")
+
     def test_apply_stealth_registers_cdp(self):
         import utils
 
