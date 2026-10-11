@@ -1,7 +1,9 @@
 # FlareSolverr on Termux (smolfiddle fork)
 
 Runs FlareSolverr natively in Termux on Android, headless out of the box,
-optionally headed under LXQt via Termux:X11 for better bypass quality.
+optionally headed under LXQt via Termux:X11. Note: hard Cloudflare
+challenges (e.g. animepahe.com search, which stalls headless past 120 s)
+require headed mode, it is not merely higher quality.
 
 Upstream behavior on Docker / desktop / Windows is unchanged — all Termux
 logic lives in `src/termux_support.py` and is neutral outside Termux.
@@ -67,7 +69,7 @@ curl -L -X POST 'http://localhost:8191/v1' \
   --data-raw '{"cmd":"request.get","url":"https://www.google.com/","maxTimeout":60000}'
 ```
 
-## Headed mode under LXQt (Termux:X11, better bypass quality)
+## Headed mode under LXQt (required for hard challenges)
 
 1. Install the Termux:X11 APK (companion app, same signing source as
    your Termux app) and grant it unrestricted battery usage so Android

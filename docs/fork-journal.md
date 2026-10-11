@@ -288,9 +288,12 @@ Chain of evidence, all verified from a Linux box:
 
 ### 8.4 Reference numbers
 
-Headless ~7.2 s vs headed ~8.1 s on the same device and target.
-Headless remains the recommended default; headed is the quality
-option. A post-Ctrl+C `ps` zombie check is the one device item still
+Headless ~7.2 s vs headed ~8.1 s on unchallenged targets (Google).
+Headless remains the default for easy targets, but hard Cloudflare
+challenges *require* headed: animepahe.com search stalled headless past
+120 s across two attempts (session rotation verified working) while
+headed solves. Device-verified 2026-10-11.
+A post-Ctrl+C `ps` zombie check is the one device item still
 unrecorded.
 
 ---
