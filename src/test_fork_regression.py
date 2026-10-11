@@ -149,6 +149,54 @@ class TestStealthHardening(unittest.TestCase):
 
         utils.apply_stealth_hardening(BrokenDriver())  # must not raise
 
+    def test_webgl_spoof_defaults(self):
+        exists_mock = mock.patch.object(
+            termux_support.os.path, "exists",
+            side_effect=lambda p: p == "/data/data/com.termux")
+        with exists_mock, mock.patch.dict(
+                termux_support.os.environ, {}, clear=True):
+            self.assertEqual(termux_support.get_webgl_spoof(),
+                             ("ARM", "Mali-G52"))
+
+    def test_webgl_spoof_off_outside_termux(self):
+        with mock.patch.object(termux_support.os.path, "exists", return_value=False), \
+             mock.patch.dict(termux_support.os.environ, {}, clear=True):
+            self.assertIsNone(termux_support.get_webgl_spoof())
+
+    def test_webgl_spoof_opt_out_and_override(self):
+        exists_mock = mock.patch.object(
+            termux_support.os.path, "exists",
+            side_effect=lambda p: p == "/data/data/com.termux")
+        with exists_mock, mock.patch.dict(
+                termux_support.os.environ, {"TERMUX_SPOOF_WEBGL": "false"},
+                clear=True):
+            self.assertIsNone(termux_support.get_webgl_spoof())
+        env = {"TERMUX_WEBGL_VENDOR": "Qualcomm",
+               "TERMUX_WEBGL_RENDERER": "Adreno 750"}
+        with exists_mock, mock.patch.dict(
+                termux_support.os.environ, env, clear=True):
+            self.assertEqual(termux_support.get_webgl_spoof(),
+                             ("Qualcomm", "Adreno 750"))
+
+    def test_apply_stealth_includes_webgl_spoof(self):
+        import utils
+
+        calls = []
+
+        class FakeDriver:
+            def execute_cdp_cmd(self, cmd, params):
+                calls.append((cmd, params))
+
+        exists_mock = mock.patch.object(
+            termux_support.os.path, "exists",
+            side_effect=lambda p: p == "/data/data/com.termux")
+        with exists_mock, mock.patch.dict(
+                termux_support.os.environ, {}, clear=True):
+            utils.apply_stealth_hardening(FakeDriver())
+        _, params = calls[0]
+        self.assertIn("Mali-G52", params["source"])
+        self.assertIn("0x9246", params["source"])
+
 
 class TestDtos(unittest.TestCase):
     def test_request_response_roundtrip(self):

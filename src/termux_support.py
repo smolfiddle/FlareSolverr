@@ -116,6 +116,26 @@ def stealth_enabled() -> bool:
     return _env_true("TERMUX_STEALTH", True)
 
 
+def get_webgl_spoof():
+    """WebGL vendor/renderer override, or None to leave the truth in place.
+
+    Software GL (SwiftShader/Lavapipe) strings mark the browser as
+    automation-friendly; the phone's real GPU (e.g. Mali-G52) is what a
+    genuine mobile browser reports. Master switch TERMUX_SPOOF_WEBGL
+    (default on in Termux), strings via TERMUX_WEBGL_VENDOR (default
+    "ARM") and TERMUX_WEBGL_RENDERER (default "Mali-G52" — override for
+    Adreno/Apple devices). Always None off-Termux.
+    Returns (vendor, renderer) or None.
+    """
+    if not is_termux():
+        return None
+    if not _env_true("TERMUX_SPOOF_WEBGL", True):
+        return None
+    vendor = os.environ.get("TERMUX_WEBGL_VENDOR", "ARM")
+    renderer = os.environ.get("TERMUX_WEBGL_RENDERER", "Mali-G52")
+    return vendor, renderer
+
+
 def get_forced_user_agent(chrome_major=None):
     """User-Agent override, or None for the browser default.
 

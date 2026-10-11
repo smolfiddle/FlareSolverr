@@ -179,6 +179,7 @@ restarting anything. Mitigations, in order:
 | `TERMUX_MOBILE_UA` | `false` | Opt-in Pixel-style Android UA (uses detected Chromium major). Strict sites may serve mobile UAs an easier challenge tier than desktop-Linux UAs from carrier IPs. |
 | `TERMUX_USER_AGENT` | unset | Full custom UA string. Wins over `TERMUX_MOBILE_UA`. |
 | `TERMUX_STEALTH` | `true` on Termux | CDP cleanup of webdriver/cdc traces. Set `false` to A/B test with hardening off. |
+| `TERMUX_SPOOF_WEBGL` | `true` on Termux | Masks software GL as the real phone GPU in WebGL fingerprint reads. Override strings with `TERMUX_WEBGL_VENDOR` (default `ARM`) and `TERMUX_WEBGL_RENDERER` (default `Mali-G52`, e.g. `Adreno 750`). |
 | `PORT` / `HOST` / `LOG_LEVEL` | `8191` / `0.0.0.0` / `info` | Same as upstream. |
 
 ## Notes

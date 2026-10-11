@@ -277,16 +277,41 @@ def apply_stealth_hardening(driver: WebDriver) -> None:
     any failure is logged and ignored so startup never breaks.
     """
     try:
+        source = (
+            "try { Object.defineProperty(navigator, 'webdriver',"
+            " { get: () => undefined }); } catch (e) {}"
+            "for (const prop of Object.getOwnPropertyNames(window)) {"
+            "  if (/^([a-zA-Z]){27}(Array|Promise|Symbol)$/.test(prop)) {"
+            "    try { delete window[prop]; } catch (e) {}"
+            "  }"
+            "}"
+        )
+        # smolfiddle fork: mask software GL as the real phone GPU.
+        webgl = (termux_support.get_webgl_spoof()
+                 if termux_support is not None else None)
+        if webgl:
+            vendor, renderer = webgl
+            vendor = vendor.replace("\\", "\\\\").replace("'", "\\'")
+            renderer = renderer.replace("\\", "\\\\").replace("'", "\\'")
+            source += (
+                "try {"
+                "  var __pp = [window.WebGLRenderingContext &&"
+                "    WebGLRenderingContext.prototype,"
+                "    window.WebGL2RenderingContext &&"
+                "    WebGL2RenderingContext.prototype];"
+                "  __pp.forEach(function(p) {"
+                "    if (!p) return;"
+                "    var __orig = p.getParameter;"
+                "    p.getParameter = function(t) {"
+                "      if (t === 0x9245) return '%s';"
+                "      if (t === 0x9246) return '%s';"
+                "      return __orig.call(this, t);"
+                "    };"
+                "  });"
+                "} catch (e) {}" % (vendor, renderer)
+            )
         driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
-            "source": (
-                "try { Object.defineProperty(navigator, 'webdriver',"
-                " { get: () => undefined }); } catch (e) {}"
-                "for (const prop of Object.getOwnPropertyNames(window)) {"
-                "  if (/^([a-zA-Z]){27}(Array|Promise|Symbol)$/.test(prop)) {"
-                "    try { delete window[prop]; } catch (e) {}"
-                "  }"
-                "}"
-            ),
+            "source": source,
         })
         logging.debug("Stealth hardening applied (webdriver/cdc cleanup)")
     except Exception as e:
