@@ -4,7 +4,7 @@ name: Fork regression
 
 on:
   push:
-    branches: ["master", "feature/**"]
+    branches: ["master", "feature/**", "fix/**"]
   pull_request:
 
 jobs:
@@ -12,8 +12,12 @@ jobs:
     name: Offline regression (py${{ matrix.python }})
     runs-on: ubuntu-22.04
     strategy:
+      fail-fast: false
       matrix:
-        python: ["3.9", "3.10", "3.11", "3.12"]
+        # Upstream pins websockets==17.0.1 (Requires-Python >=3.11), so only
+        # 3.11+ can install requirements.txt. The 3.9 floor is still enforced
+        # statically by the syntax-check step below on every leg.
+        python: ["3.11", "3.12"]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
