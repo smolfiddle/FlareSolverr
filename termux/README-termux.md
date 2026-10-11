@@ -126,7 +126,10 @@ mode needs only step 4.
 
 `[Process completed (signal 9)]` means Android killed the session, not a
 FlareSolverr bug. LXQt plus Chromium plus FlareSolverr is heavy for a
-phone. Mitigations, in order:
+phone. A killed session also orphans its Chrome tree (~1 GB, never
+self-cleans): always run
+`pkill -9 -f chrome; pkill -9 -f chromedriver` after a signal 9 before
+restarting anything. Mitigations, in order:
 
    ```sh
    # 1. Both apps need Unrestricted battery (Settings -> Apps ->
