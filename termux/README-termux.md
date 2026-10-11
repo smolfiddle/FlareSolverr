@@ -1,9 +1,9 @@
 # FlareSolverr on Termux (smolfiddle fork)
 
 Runs FlareSolverr natively in Termux on Android, headless out of the box,
-optionally headed under LXQt via Termux:X11. Note: hard Cloudflare
-challenges (e.g. animepahe.com search, which stalls headless past 120 s)
-require headed mode, it is not merely higher quality.
+optionally headed via Termux:X11 for rendering fidelity and interactive
+challenges. Note: the strictest targets (e.g. animepahe search) stall in
+both modes; see "Hard targets" below for the cookie-transplant path.
 
 Upstream behavior on Docker / desktop / Windows is unchanged — all Termux
 logic lives in `src/termux_support.py` and is neutral outside Termux.
@@ -69,7 +69,7 @@ curl -L -X POST 'http://localhost:8191/v1' \
   --data-raw '{"cmd":"request.get","url":"https://www.google.com/","maxTimeout":60000}'
 ```
 
-## Headed mode (required for hard challenges)
+## Headed mode (rendering fidelity, interactive challenges)
 
 Headed runs need an X server plus a *light* session. Device-verified:
 a full `lxqt-session` (~30 processes with autostarted daemons) gets
@@ -165,6 +165,41 @@ restarting anything. Mitigations, in order:
   process limit); single-process is required, not optional.
 - Headless is the recommended default; headed is the quality option
   where bypass behavior matters.
+
+## Hard targets: animepahe verdict (device-proven limits)
+
+`animepahe.com` / `animepahe.pw` search endpoints do **not** auto-solve
+from Termux Chromium as of 2026-10-11. Four hardening layers were
+A/B-tested on-device and all ruled out (challenge stalls identically):
+
+- automation flag plus cdc-trace cleanup (`TERMUX_STEALTH`),
+- Pixel mobile UA (`TERMUX_MOBILE_UA`),
+- WebGL Mali-G52 spoof (`TERMUX_SPOOF_WEBGL`),
+- headed vs headless, single vs multi-process.
+
+Challenge-HTML forensics: `Just a moment...` persists, `Verify you are
+human` text present, but **zero `<input>`/`<button>` elements, zero
+Turnstile markup, zero challenge selectors** in the DOM. There is
+nothing to click; the widget never materializes. Same IP passes in
+mobile Firefox, and `challenges.cloudflare.com` is directly reachable
+(DNS plus HTTP 200), so this is browser-fingerprint strictness, not
+network. Likely structural (Termux build: software GL, no proprietary
+bits) rather than anything launch flags can change.
+
+Supported path for such targets: **cookie transplant** (verified
+working). Solve once in the phone's Firefox, export the site cookies,
+and feed them in:
+
+```sh
+# pahebatcher (its Solver forwards cookies to FlareSolverr):
+pahebatcher config set cookie_string 'cf_clearance=XXX; other=YYY'
+# or per FlareSolverr request:
+{"cmd": "request.get", "url": "...", "cookies": [{"name": "cf_clearance", "value": "XXX"}]}
+```
+
+What would reopen this: a visible checkbox during the loop (then wire
+`tabs_till_verify` through the client), or a solve on a different
+network (then it is IP-tiering, route via `FLARESOLVERR_PROXY`).
 
 ## Environment reference
 

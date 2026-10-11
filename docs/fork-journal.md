@@ -286,15 +286,33 @@ Chain of evidence, all verified from a Linux box:
   LockScreenManager, DPMS, GrabKey and notification-daemon warnings
   are all benign noise.
 
-### 8.4 Reference numbers
+### 8.4 Reference numbers (corrected)
 
 Headless ~7.2 s vs headed ~8.1 s on unchallenged targets (Google).
-Headless remains the default for easy targets, but hard Cloudflare
-challenges *require* headed: animepahe.com search stalled headless past
-120 s across two attempts (session rotation verified working) while
-headed solves. Device-verified 2026-10-11.
+Correction to the earlier note: headed does *not* solve animepahe;
+both modes stall its challenge identically (see 8.5). Headed remains
+the quality option for rendering fidelity, not a bypass upgrade for
+strict targets. Device-verified 2026-10-11.
 A post-Ctrl+C `ps` zombie check is the one device item still
 unrecorded.
+
+### 8.5 animepahe verdict: unsupported target (spiral called off)
+
+Four hardening layers A/B-tested on-device, all negative: automation
+flag plus cdc cleanup, Pixel mobile UA, WebGL Mali-G52 spoof, headed
+vs headless and single vs multi-process. Challenge-HTML forensics via
+`LOG_HTML=true` plus grep: `Just a moment...` persists, `Verify you
+are human` text x6, but zero `<input>`/`<button>` elements, zero
+Turnstile markup (`cf-turnstile-response`, `turnstile-wrapper`),
+zero challenge selectors in the DOM. Nothing to click; the widget
+never renders. Same IP passes in mobile Firefox and
+`challenges.cloudflare.com` answers HTTP 200 directly, so this is
+fingerprint strictness (likely structural: software GL, no
+proprietary build bits), not network and not interaction.
+Supported path: cookie transplant (see "Hard targets" in
+`termux/README-termux.md`).
+Reopen triggers: visible checkbox (wire `tabs_till_verify`), or a
+solve on another network (IP-tiering, use `FLARESOLVERR_PROXY`).
 
 ---
 
