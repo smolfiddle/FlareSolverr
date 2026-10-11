@@ -6,6 +6,9 @@ optionally headed under LXQt via Termux:X11 for better bypass quality.
 Upstream behavior on Docker / desktop / Windows is unchanged — all Termux
 logic lives in `src/termux_support.py` and is neutral outside Termux.
 
+Full project record (research, decisions, testing, device results):
+`docs/fork-journal.md`.
+
 ## Prerequisites
 
 - Termux from GitHub (not Play Store — the Play Store build is outdated).
