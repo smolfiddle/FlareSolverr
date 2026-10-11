@@ -59,13 +59,67 @@ class TestTermuxNeutralOffDevice(unittest.TestCase):
             return p == "/data/data/com.termux"
         with mock.patch.object(termux_support.os.path, "exists", side_effect=exists), \
              mock.patch.dict(termux_support.os.environ, {}, clear=True):
-            self.assertEqual(termux_support.get_extra_chrome_args(), ["--disable-gpu"])
+            self.assertEqual(termux_support.get_extra_chrome_args(),
+                             ["--disable-gpu",
+                              "--disable-blink-features=AutomationControlled"])
         env = {"TERMUX_SINGLE_PROCESS": "1", "TERMUX_JITLESS": "true",
                "TERMUX_DISABLE_GPU": "false"}
         with mock.patch.object(termux_support.os.path, "exists", side_effect=exists), \
              mock.patch.dict(termux_support.os.environ, env, clear=True):
             self.assertEqual(termux_support.get_extra_chrome_args(),
-                             ["--single-process", "--js-flags=--jitless"])
+                             ["--disable-blink-features=AutomationControlled",
+                              "--single-process", "--js-flags=--jitless"])
+
+
+class TestStealthHardening(unittest.TestCase):
+    def _as_termux(self):
+        return (mock.patch.object(termux_support.os.path, "exists",
+                                  side_effect=lambda p: p == "/data/data/com.termux"),
+                mock.patch.dict(termux_support.os.environ, {}, clear=True))
+
+    def test_stealth_off_outside_termux(self):
+        with mock.patch.object(termux_support.os.path, "exists", return_value=False), \
+             mock.patch.dict(termux_support.os.environ, {}, clear=True):
+            self.assertFalse(termux_support.stealth_enabled())
+
+    def test_stealth_defaults_on_in_termux(self):
+        exists_mock, env_mock = self._as_termux()
+        with exists_mock, env_mock:
+            self.assertTrue(termux_support.stealth_enabled())
+
+    def test_stealth_opt_out(self):
+        exists_mock = mock.patch.object(
+            termux_support.os.path, "exists",
+            side_effect=lambda p: p == "/data/data/com.termux")
+        with exists_mock, mock.patch.dict(
+                termux_support.os.environ, {"TERMUX_STEALTH": "false"}, clear=True):
+            self.assertFalse(termux_support.stealth_enabled())
+
+    def test_apply_stealth_registers_cdp(self):
+        import utils
+
+        calls = []
+
+        class FakeDriver:
+            def execute_cdp_cmd(self, cmd, params):
+                calls.append((cmd, params))
+
+        utils.apply_stealth_hardening(FakeDriver())
+        self.assertEqual(len(calls), 1)
+        cmd, params = calls[0]
+        self.assertEqual(cmd, "Page.addScriptToEvaluateOnNewDocument")
+        self.assertIn("webdriver", params["source"])
+        # cdc_/$cdc props matched by the 27-char-name regex, not a literal
+        self.assertIn("{27}", params["source"])
+
+    def test_apply_stealth_never_raises(self):
+        import utils
+
+        class BrokenDriver:
+            def execute_cdp_cmd(self, cmd, params):
+                raise RuntimeError("cdp dead")
+
+        utils.apply_stealth_hardening(BrokenDriver())  # must not raise
 
 
 class TestDtos(unittest.TestCase):

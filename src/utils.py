@@ -243,6 +243,11 @@ def get_webdriver(proxy: dict = None) -> WebDriver:
     if proxy_extension_dir is not None:
         shutil.rmtree(proxy_extension_dir)
 
+    # smolfiddle fork: strip automation traces on Termux (no-op elsewhere,
+    # never fatal — see TERMUX_STEALTH).
+    if termux_support is not None and termux_support.stealth_enabled():
+        apply_stealth_hardening(driver)
+
     # selenium vanilla
     # options = webdriver.ChromeOptions()
     # options.add_argument('--no-sandbox')
@@ -252,6 +257,32 @@ def get_webdriver(proxy: dict = None) -> WebDriver:
     # driver = webdriver.Chrome(options=options)
 
     return driver
+
+
+def apply_stealth_hardening(driver: WebDriver) -> None:
+    """Remove automation traces via CDP before any navigation happens.
+
+    smolfiddle fork, Termux-only (callers gate on stealth_enabled()).
+    Complements --disable-blink-features=AutomationControlled: the flag
+    hides navigator.webdriver at birth, this removes chromedriver's
+    injected cdc_/$cdc variables from every new document. Best effort:
+    any failure is logged and ignored so startup never breaks.
+    """
+    try:
+        driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+            "source": (
+                "try { Object.defineProperty(navigator, 'webdriver',"
+                " { get: () => undefined }); } catch (e) {}"
+                "for (const prop of Object.getOwnPropertyNames(window)) {"
+                "  if (/^([a-zA-Z]){27}(Array|Promise|Symbol)$/.test(prop)) {"
+                "    try { delete window[prop]; } catch (e) {}"
+                "  }"
+                "}"
+            ),
+        })
+        logging.debug("Stealth hardening applied (webdriver/cdc cleanup)")
+    except Exception as e:
+        logging.debug("Stealth hardening skipped: %s", e)
 
 
 def get_chrome_exe_path() -> str:

@@ -95,11 +95,25 @@ def get_extra_chrome_args() -> List[str]:
     args = []
     if _env_true("TERMUX_DISABLE_GPU", True):
         args.append("--disable-gpu")
+    # Hides navigator.webdriver at birth; Cloudflare flags Termux
+    # Chromium builds otherwise (verified: hard challenges fail without).
+    args.append("--disable-blink-features=AutomationControlled")
     if _env_true("TERMUX_SINGLE_PROCESS", False):
         args.append("--single-process")
     if _env_true("TERMUX_JITLESS", False):
         args.append("--js-flags=--jitless")
     return args
+
+
+def stealth_enabled() -> bool:
+    """CDP webdriver-trace cleanup on/off. Default on in Termux.
+
+    Set TERMUX_STEALTH=false to A/B test challenge behavior with and
+    without the cleanup. Always False off-Termux (upstream untouched).
+    """
+    if not is_termux():
+        return False
+    return _env_true("TERMUX_STEALTH", True)
 
 
 def log_display_mode(headless: bool):
