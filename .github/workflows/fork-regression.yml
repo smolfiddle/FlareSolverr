@@ -1,0 +1,40 @@
+# smolfiddle fork: offline regression CI.
+# No browser, no network, no Xvfb — runs free on every push/PR.
+name: Fork regression
+
+on:
+  push:
+    branches: ["master", "feature/**"]
+  pull_request:
+
+jobs:
+  regression:
+    name: Offline regression (py${{ matrix.python }})
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        python: ["3.9", "3.10", "3.11", "3.12"]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
+
+      - name: Python 3.9 syntax check (fork floor)
+        run: |
+          python -c "import ast,sys; [ast.parse(open(f).read(), filename=f, feature_version=(3,9)) for f in ['src/termux_support.py','src/utils.py','src/dtos.py','src/sessions.py','src/test_fork_regression.py']]; print('3.9-parse OK')"
+
+      - name: Shell syntax check (Termux installer)
+        run: bash -n termux/install-termux.sh && echo SHELL-OK
+
+      - name: Run offline regression suite
+        run: python -m pytest src/test_fork_regression.py -q
