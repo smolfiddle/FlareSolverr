@@ -69,22 +69,31 @@ curl -L -X POST 'http://localhost:8191/v1' \
   --data-raw '{"cmd":"request.get","url":"https://www.google.com/","maxTimeout":60000}'
 ```
 
-## Headed mode under LXQt (required for hard challenges)
+## Headed mode (required for hard challenges)
+
+Headed runs need an X server plus a *light* session. Device-verified:
+a full `lxqt-session` (~30 processes with autostarted daemons) gets
+SIGKilled by Android together with the server, while bare `openbox`
+survives indefinitely. Use openbox, not the full LXQt session.
 
 1. Install the Termux:X11 APK (companion app, same signing source as
    your Termux app) and grant it unrestricted battery usage so Android
-   doesn't kill the display server.
-2. In Termux (one time per boot; `dbus-launch` is required or the
-   session exits immediately):
+   doesn't kill the display server. Same for the Termux app itself;
+   lock both in recents.
+2. Per boot:
    ```sh
-   pkg install -y termux-x11-nightly lxqt
+   pkg install -y termux-x11-nightly openbox
    pkill -f 'termux-x11' 2>/dev/null; sleep 1  # clear stale servers
    termux-x11 :0 &
-   DISPLAY=:0 dbus-launch --exit-with-session lxqt-session &
+   sleep 2; ls $PREFIX/tmp/.X11-unix/   # expect: X0
+   DISPLAY=:0 openbox &
    ```
-   Open the Termux:X11 app to see the desktop. If `termux-x11` says
-   "server already running", a server from an earlier start is still
-   serving `:0`, which is fine, just use it.
+   Open the Termux:X11 app: gray screen plus right-click menu means
+   the session is up. If `termux-x11` says "server already running",
+   a server from an earlier start is still serving `:0`; just use it.
+   (A full `lxqt-session` also works if your device tolerates it, but
+   `dbus-launch` is then required or it exits immediately, and on
+   7-8 GB devices Android reaps the stack. Openbox is the safe route.)
 3. Start FlareSolverr headed (`TERMUX_SINGLE_PROCESS=1` is recommended:
    it keeps Chromium to one process, which avoids Android's phantom
    process killer terminating the session; verified on-device):
@@ -103,16 +112,16 @@ mode needs only step 4.
    # 1. Optional: keep the CPU awake for long solves
    termux-wake-lock
    # 2. Fresh X server (skip for headless mode)
-   pkill -f 'termux-x11' 2>/dev/null; pkill -f lxqt-session 2>/dev/null; sleep 1
+   pkill -f 'termux-x11' 2>/dev/null; sleep 1
    termux-x11 :0 &
    sleep 2
    ls $PREFIX/tmp/.X11-unix/   # expect: X0. If missing, the server died:
                                # open the Termux:X11 app, confirm its battery
                                # setting is Unrestricted, and retry.
-   # 3. LXQt session (skip for headless mode)
-   DISPLAY=:0 dbus-launch --exit-with-session lxqt-session &
+   # 3. Light session: openbox, not full lxqt-session (skip for headless)
+   DISPLAY=:0 openbox &
    # 4. Latest fork code, then start (headless shown; headed: add DISPLAY=:0
-   #    and set HEADLESS=false)
+   #    and set HEADLESS=false, plus TERMUX_SINGLE_PROCESS=1)
    cd ~/smol && git pull --ff-only
    HEADLESS=true python src/flaresolverr.py
    ```
