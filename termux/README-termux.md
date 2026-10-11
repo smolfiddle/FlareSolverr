@@ -114,6 +114,19 @@ phone. Mitigations, in order:
    Check free memory with `free -h`. Devices with 4 GB or less should
    prefer headless mode.
 
+## Device-verified results (2026-10-11, Android 14 aarch64, Chromium 154)
+
+- Headless (`HEADLESS=true`): install script clean, startup test passes,
+  Google solve `"ok" / "Challenge not detected!"` in ~7.2 s. Sessions
+  create, reuse, destroy all pass.
+- Headed LXQt (`TERMUX_SINGLE_PROCESS=1 DISPLAY=:0 HEADLESS=false`):
+  startup passes, Chromium window visible in Termux:X11, Google solve in
+  ~8.1 s. Slightly slower than headless (real X rendering).
+- Multi-process headed Chromium gets SIGKilled by Android (phantom
+  process limit); single-process is required, not optional.
+- Headless is the recommended default; headed is the quality option
+  where bypass behavior matters.
+
 ## Environment reference
 
 | Variable | Default | Effect |
