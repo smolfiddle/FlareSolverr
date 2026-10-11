@@ -65,6 +65,34 @@ curl -L -X POST 'http://localhost:8191/v1' \
    The fork logs `using Termux:X11 display :0 (LXQt)`. If you see
    `HEADLESS=false but no $DISPLAY`, the X server isn't running.
 
+## After a reboot / Termux restart (checklist)
+
+Everything below dies on reboot, so run it fresh each time. Headless
+mode needs only step 4.
+
+   ```sh
+   # 1. Optional: keep the CPU awake for long solves
+   termux-wake-lock
+   # 2. Fresh X server (skip for headless mode)
+   pkill -f 'termux-x11' 2>/dev/null; pkill -f lxqt-session 2>/dev/null; sleep 1
+   termux-x11 :0 &
+   sleep 2
+   ls $PREFIX/tmp/.X11-unix/   # expect: X0. If missing, the server died:
+                               # open the Termux:X11 app, confirm its battery
+                               # setting is Unrestricted, and retry.
+   # 3. LXQt session (skip for headless mode)
+   DISPLAY=:0 dbus-launch --exit-with-session lxqt-session &
+   # 4. Latest fork code, then start (headless shown; headed: add DISPLAY=:0
+   #    and set HEADLESS=false)
+   cd ~/smol && git pull --ff-only
+   HEADLESS=true python src/flaresolverr.py
+   ```
+
+   If headed startup fails with `cannot connect to chrome`, re-check step 2
+   first: a dead X server is the most common cause (Chrome reports
+   `Missing X server or $DISPLAY`). Kill stale browsers with
+   `pkill -9 -f chrome; pkill -9 -f chromedriver` before retrying.
+
 ## Environment reference
 
 | Variable | Default | Effect |
