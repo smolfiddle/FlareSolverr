@@ -17,6 +17,27 @@ Full project record (research, decisions, testing, device results):
 
 ## Install
 
+Two routes. The official package is easiest; the fork route gives you
+native headless (no Xvfb), headed LXQt mode, and the latest fork docs.
+
+### Route A (recommended): official Termux package
+
+```sh
+pkg update -y
+pkg install -y x11-repo
+pkg install -y flaresolverr
+flaresolverr &
+```
+
+Device-verified 2026-10-11: installs `flaresolverr 3.5.2-1`, starts via
+the Xvfb path, solves Google with `"ok"`. Note it installs Python deps
+unpinned through pip, which may upgrade shared packages (observed:
+selenium 4.47.0 to 4.51.0). If `pkg install` says unable to locate,
+your mirror hasn't synced: switch to `packages.termux.dev` via
+`termux-change-repo`, or wait a day.
+
+### Route B: this fork (hacker route)
+
 ```sh
 # 1. Base packages (x11-repo provides chromium)
 pkg update -y
@@ -28,7 +49,8 @@ bash termux/install-termux.sh
 ```
 
 ```sh
-# 2. Python dependencies (no xvfbwrapper — Xvfb doesn't exist in Termux)
+# 2. Python dependencies (no xvfbwrapper: the fork uses Chromium native
+#    headless instead of Xvfb)
 pip install -r termux/requirements-termux.txt
 ```
 
