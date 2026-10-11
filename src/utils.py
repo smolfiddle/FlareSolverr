@@ -11,6 +11,12 @@ import urllib.parse
 from selenium.webdriver.chrome.webdriver import WebDriver
 import undetected_chromedriver as uc
 
+try:
+    # smolfiddle fork: Termux/X11 support (additive, safe to miss on upstream)
+    import termux_support
+except ImportError:
+    termux_support = None
+
 FLARESOLVERR_VERSION = None
 PLATFORM_VERSION = None
 CHROME_EXE_PATH = None
@@ -156,6 +162,11 @@ def get_webdriver(proxy: dict = None) -> WebDriver:
     # disable breaking popup
     options.add_argument("--disable-features=LocalNetworkAccessChecks")
 
+    # smolfiddle fork: Termux/Android needs extra flags (no-op elsewhere)
+    if termux_support is not None:
+        for arg in termux_support.get_extra_chrome_args():
+            options.add_argument(arg)
+
     language = os.environ.get('LANG', None)
     if language is not None:
         options.add_argument('--accept-lang=%s' % language)
@@ -180,15 +191,27 @@ def get_webdriver(proxy: dict = None) -> WebDriver:
     if get_config_headless():
         if os.name == 'nt':
             windows_headless = True
+        elif termux_support is not None and termux_support.should_skip_xvfb():
+            # smolfiddle fork: no Xvfb in Termux; use native headless.
+            # With Termux:X11 + HEADLESS=false, headed mode uses $DISPLAY.
+            termux_support.log_display_mode(headless=True)
         else:
             start_xvfb_display()
+    elif termux_support is not None and termux_support.is_termux():
+        # smolfiddle fork: headed mode on Termux expects Termux:X11 ($DISPLAY)
+        termux_support.log_display_mode(headless=False)
     # For normal headless mode:
     # options.add_argument('--headless')
 
     # if we are inside the Docker container, we avoid downloading the driver
     driver_exe_path = None
     version_main = None
-    if os.path.exists("/app/chromedriver"):
+    # smolfiddle fork: Termux ships a matched chromedriver (no download)
+    termux_driver = termux_support.get_chromedriver_path() if termux_support else None
+    if termux_driver:
+        driver_exe_path = termux_driver
+        version_main = get_chrome_major_version()
+    elif os.path.exists("/app/chromedriver"):
         # running inside Docker
         driver_exe_path = "/app/chromedriver"
     else:
@@ -235,6 +258,12 @@ def get_chrome_exe_path() -> str:
     global CHROME_EXE_PATH
     if CHROME_EXE_PATH is not None:
         return CHROME_EXE_PATH
+    # smolfiddle fork: Termux Chromium + $CHROME_BIN override (None elsewhere)
+    if termux_support is not None:
+        termux_chrome = termux_support.get_chrome_path()
+        if termux_chrome:
+            CHROME_EXE_PATH = termux_chrome
+            return CHROME_EXE_PATH
     # linux pyinstaller bundle
     chrome_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'chrome', "chrome")
     if os.path.exists(chrome_path):

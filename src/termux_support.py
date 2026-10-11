@@ -1,0 +1,115 @@
+"""
+smolfiddle fork: Termux / Termux:X11 (LXQt) platform support.
+
+This module is ADDITIVE ONLY — it must never change behaviour on
+non-Termux systems. All helpers return neutral values (False / None / [])
+when Termux is not detected, so upstream code paths run untouched.
+
+Upstream files (utils.py, patcher.py) call into here behind tiny guards.
+If this file is missing (e.g. upstream merge without the fork), callers
+fall back to upstream behaviour via try/except ImportError.
+"""
+
+import logging
+import os
+
+TERMUX_PREFIX = "/data/data/com.termux/files/usr"
+TERMUX_CHROME_CANDIDATES = (
+    # pkg install chromium (x11-repo) — current aarch64 layout
+    "/data/data/com.termux/files/usr/lib/chromium/chrome",
+    "/data/data/com.termux/files/usr/bin/chromium-browser",
+    "/data/data/com.termux/files/usr/bin/chromium",
+)
+TERMUX_CHROMEDRIVER_CANDIDATES = (
+    # chromium package ships a matched chromedriver binary
+    "/data/data/com.termux/files/usr/bin/chromedriver",
+    "/data/data/com.termux/files/usr/lib/chromium/chromedriver",
+)
+
+
+def is_termux() -> bool:
+    """True when running inside Termux (phone/tablet, Android)."""
+    if os.path.exists("/data/data/com.termux"):
+        return True
+    prefix = os.environ.get("PREFIX", "")
+    if "com.termux" in prefix:
+        return True
+    return False
+
+
+def is_termux_x11() -> bool:
+    """True when Termux:X11 display is available (LXQt session, etc.)."""
+    return is_termux() and bool(os.environ.get("DISPLAY"))
+
+
+def should_skip_xvfb() -> bool:
+    """Xvfb binary does not exist in Termux — Termux:X11 is the X server."""
+    return is_termux()
+
+
+def get_chrome_path() -> str | None:
+    """Termux Chromium path, or None when not on Termux / not found.
+
+    Priority: $CHROME_BIN env override, then known Termux candidates.
+    """
+    if not is_termux():
+        return None
+    env_bin = os.environ.get("CHROME_BIN")
+    if env_bin and os.path.exists(env_bin) and os.access(env_bin, os.X_OK):
+        return env_bin
+    for candidate in TERMUX_CHROME_CANDIDATES:
+        if os.path.exists(candidate) and os.access(candidate, os.X_OK):
+            return candidate
+    return None
+
+
+def get_chromedriver_path() -> str | None:
+    """Termux chromedriver path, or None when not on Termux / not found."""
+    if not is_termux():
+        return None
+    for candidate in TERMUX_CHROMEDRIVER_CANDIDATES:
+        if os.path.exists(candidate) and os.access(candidate, os.X_OK):
+            return candidate
+    return None
+
+
+def _env_true(name: str, default: bool = False) -> bool:
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.lower() in ("1", "true", "yes", "on")
+
+
+def get_extra_chrome_args() -> list:
+    """Extra Chromium flags needed on Termux/Android. Empty elsewhere.
+
+    All opt-in/opt-out via env so upstream defaults never change:
+      TERMUX_DISABLE_GPU=true (default on Termux: no /dev/dri in Android)
+      TERMUX_SINGLE_PROCESS=false (opt-in: helps Android 32-process limit)
+      TERMUX_JITLESS=false (opt-in: needed on unrooted Android 10+ where
+        SELinux W^X blocks V8 JIT mmap(PROT_EXEC), else SIGSEGV/139)
+    """
+    if not is_termux():
+        return []
+    args = []
+    if _env_true("TERMUX_DISABLE_GPU", True):
+        args.append("--disable-gpu")
+    if _env_true("TERMUX_SINGLE_PROCESS", False):
+        args.append("--single-process")
+    if _env_true("TERMUX_JITLESS", False):
+        args.append("--js-flags=--jitless")
+    return args
+
+
+def log_display_mode(headless: bool):
+    """One-line log so Termux:X11 vs headless vs Xvfb is always obvious."""
+    if not is_termux():
+        return
+    display = os.environ.get("DISPLAY")
+    if headless:
+        logging.info("Termux detected: using native headless (Xvfb skipped)")
+    elif display:
+        logging.info(f"Termux detected: using Termux:X11 display {display} (LXQt)")
+    else:
+        logging.warning("Termux detected with HEADLESS=false but no $DISPLAY — "
+                        "start Termux:X11 or set HEADLESS=true")
