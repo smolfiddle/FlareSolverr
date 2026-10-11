@@ -44,14 +44,20 @@ curl -L -X POST 'http://localhost:8191/v1' \
 
 ## Headed mode under LXQt (Termux:X11, better bypass quality)
 
-1. Install the Termux:X11 APK (companion app) and grant it
-   unrestricted battery usage so Android doesn't kill the display server.
-2. In Termux:
+1. Install the Termux:X11 APK (companion app, same signing source as
+   your Termux app) and grant it unrestricted battery usage so Android
+   doesn't kill the display server.
+2. In Termux (one time per boot; `dbus-launch` is required or the
+   session exits immediately):
    ```sh
    pkg install -y termux-x11-nightly lxqt
+   pkill -f 'termux-x11' 2>/dev/null; sleep 1  # clear stale servers
    termux-x11 :0 &
-   DISPLAY=:0 lxqt-session &
+   DISPLAY=:0 dbus-launch --exit-with-session lxqt-session &
    ```
+   Open the Termux:X11 app to see the desktop. If `termux-x11` says
+   "server already running", a server from an earlier start is still
+   serving `:0`, which is fine, just use it.
 3. Start FlareSolverr headed:
    ```sh
    DISPLAY=:0 HEADLESS=false python src/flaresolverr.py
