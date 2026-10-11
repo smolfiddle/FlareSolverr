@@ -12,6 +12,7 @@ fall back to upstream behaviour via try/except ImportError.
 
 import logging
 import os
+from typing import List, Optional
 
 TERMUX_PREFIX = "/data/data/com.termux/files/usr"
 TERMUX_CHROME_CANDIDATES = (
@@ -47,7 +48,7 @@ def should_skip_xvfb() -> bool:
     return is_termux()
 
 
-def get_chrome_path() -> str | None:
+def get_chrome_path() -> Optional[str]:
     """Termux Chromium path, or None when not on Termux / not found.
 
     Priority: $CHROME_BIN env override, then known Termux candidates.
@@ -63,7 +64,7 @@ def get_chrome_path() -> str | None:
     return None
 
 
-def get_chromedriver_path() -> str | None:
+def get_chromedriver_path() -> Optional[str]:
     """Termux chromedriver path, or None when not on Termux / not found."""
     if not is_termux():
         return None
@@ -80,7 +81,7 @@ def _env_true(name: str, default: bool = False) -> bool:
     return value.lower() in ("1", "true", "yes", "on")
 
 
-def get_extra_chrome_args() -> list:
+def get_extra_chrome_args() -> List[str]:
     """Extra Chromium flags needed on Termux/Android. Empty elsewhere.
 
     All opt-in/opt-out via env so upstream defaults never change:
