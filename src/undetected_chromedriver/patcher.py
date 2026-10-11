@@ -22,7 +22,9 @@ from multiprocessing import Lock
 
 logger = logging.getLogger(__name__)
 
-IS_POSIX = sys.platform.startswith(("darwin", "cygwin", "linux", "linux2", "freebsd"))
+# smolfiddle fork: "android" added for Termux Python builds (sys.platform
+# can be "linux" or "android" depending on build). No-op on upstream.
+IS_POSIX = sys.platform.startswith(("darwin", "cygwin", "linux", "linux2", "freebsd", "android"))
 
 
 class Patcher(object):
@@ -127,6 +129,10 @@ class Patcher(object):
             self.platform_name = "win32"
             self.exe_name %= ".exe"
         if self.platform.endswith(("linux", "linux2")):
+            self.platform_name = "linux64"
+            self.exe_name %= ""
+        # smolfiddle fork: Termux/Android uses linux64 chromedriver builds
+        if self.platform.startswith("android"):
             self.platform_name = "linux64"
             self.exe_name %= ""
         if self.platform.endswith("darwin"):
